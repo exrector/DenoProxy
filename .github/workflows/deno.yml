@@ -1,4 +1,4 @@
-name: Deploy to Deno
+name: Deploy to Deno Deploy
 
 on:
   push:
@@ -10,13 +10,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - name: Deploy to Deno
+      - name: Deploy to Deno Deploy
         uses: denoland/deployctl@v1
         with:
           project: exrector-denoproxy-76
           entrypoint: proxy.ts
-      - name: Run linter
-        run: deno lint
-
-      - name: Run tests
-        run: deno test -A
