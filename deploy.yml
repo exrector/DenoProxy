@@ -1,4 +1,4 @@
-name: Deploy to Deno
+name: Deploy to Deno Deploy
 
 on:
   push:
@@ -7,10 +7,18 @@ on:
 
 jobs:
   deploy:
+    name: Deploy to Deno Deploy
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
     steps:
       - uses: actions/checkout@v3
-      - name: Deploy to Deno
+      - name: Install Deno
+        uses: denoland/setup-deno@v2
+        with:
+          deno-version: v1.x
+      - name: Upload to Deno Deploy
         uses: denoland/deployctl@v1
         with:
           project: exrector-denoproxy-76
