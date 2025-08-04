@@ -1,49 +1,53 @@
-/// <reference lib="deno.unstable" />
+import { stripHopByHop } from "./utils.ts"; // вспомогательная функция для очистки заголовков
 
-Deno.serve(async (req) => {
-  // Авторизация VLESS
+export default async function handler(req: Request): Promise<Response> {
   const url = new URL(req.url);
-  const upgradeHeader = req.headers.get("upgrade") || "";
-  const proxyProtocol = req.headers.get("sec-websocket-protocol") || "";
 
-  const isWebSocket = upgradeHeader.toLowerCase() === "websocket";
-  const isVLESS = proxyProtocol.toLowerCase() === "vless";
+  // Заменяем на адрес, куда проксируем трафик
+  const targetBase = "https://thoroughly-champion-mastiff.edgecompute.app";
 
-  if (!isWebSocket || !isVLESS) {
-    return new Response("Unauthorized", { status: 401 });
+  const targetUrl = `${targetBase}${url.pathname}${url.search}`;
+
+  // Создаём новый запрос к целевому серверу
+  const proxiedRequest = new Request(targetUrl, {
+    method: req.method,
+    headers: stripHopByHop(req.headers),
+    body: ["GET", "HEAD"].includes(req.method) ? null : req.body,
+    redirect: "manual",
+  });
+
+  try {
+    const response = await fetch(proxiedRequest);
+
+    // Прокидываем ответ обратно, очищая заголовки
+    return new Response(response.body, {
+      status: response.status,
+      statusText: response.statusText,
+      headers: stripHopByHop(response.headers),
+    });
+  } catch (e) {
+    return new Response(`Proxy error: ${e.message}`, { status: 502 });
   }
+}
 
-  // Устанавливаем WebSocket
-  const { socket, response } = Deno.upgradeWebSocket(req);
-
-  socket.onopen = () => {
-    console.log("WebSocket connection opened");
-  };
-
-  socket.onmessage = async (event) => {
-    try {
-      const data = event.data;
-
-      if (!(data instanceof Uint8Array)) {
-        console.warn("Expected binary data");
-        return;
-      }
-
-      // Здесь можно добавить проксирование, forward или echo
-      socket.send(data); // Echo-сервер для проверки
-    } catch (err) {
-      console.error("Error handling message:", err);
-      socket.close(1011, "Internal error");
+// utils.ts
+export function stripHopByHop(headers: Headers): Headers {
+  const result = new Headers();
+  for (const [key, value] of headers.entries()) {
+    if (
+      ![
+        "connection",
+        "keep-alive",
+        "proxy-authenticate",
+        "proxy-authorization",
+        "te",
+        "trailers",
+        "transfer-encoding",
+        "upgrade",
+      ].includes(key.toLowerCase())
+    ) {
+      result.set(key, value);
     }
-  };
-
-  socket.onerror = (err) => {
-    console.error("WebSocket error:", err);
-  };
-
-  socket.onclose = (e) => {
-    console.log("WebSocket closed:", e.code, e.reason);
-  };
-
-  return response;
-});
+  }
+  return result;
+}
