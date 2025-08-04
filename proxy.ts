@@ -1,4 +1,4 @@
-// proxy.ts — Deno Deploy Web Stream proxy to Fastly
+// proxy.ts — Deno Deploy Web Stream proxy to Fastly 
 
 const FASTLY_TARGET = "https://thoroughly-champion-mastiff.edgecompute.app"; // замени на свой
 
