@@ -12,16 +12,16 @@ serve(async (req: Request): Promise<Response> => {
     return new Response("Unauthorized", { status: 403 });
   }
 
-  // WebSocket tunnel handling
+  // === WebSocket туннель ===
   if (req.headers.get("upgrade")?.toLowerCase() === "websocket") {
     const { socket, response } = Deno.upgradeWebSocket(req);
 
     socket.onopen = () => {
-      console.log("WebSocket opened");
+      console.log("WebSocket connected");
     };
 
     socket.onmessage = (event) => {
-      // echo tunnel, can be replaced with real proxying
+      // echo mode — можешь заменить на проброс
       socket.send(event.data);
     };
 
@@ -37,7 +37,7 @@ serve(async (req: Request): Promise<Response> => {
     return response;
   }
 
-  // HTTP proxy
+  // === HTTP-проксирование ===
   const target = req.headers.get("x-destination-url") ?? DEFAULT_DEST;
 
   try {
@@ -49,7 +49,7 @@ serve(async (req: Request): Promise<Response> => {
     });
 
     const responseHeaders = new Headers(proxyRes.headers);
-    responseHeaders.delete("content-encoding"); // Ensure Deno can stream it
+    responseHeaders.delete("content-encoding");
 
     return new Response(proxyRes.body, {
       status: proxyRes.status,
@@ -60,31 +60,3 @@ serve(async (req: Request): Promise<Response> => {
     return new Response("Proxy error: " + err.message, { status: 502 });
   }
 });
-    socket.onclose = () => console.log("WebSocket closed");
-    return response;
-  }
-
-  // Иначе — обычный HTTP-проксирование
-  const target = req.headers.get("x-destination-url") ?? DEFAULT_DEST;
-
-  try {
-    const proxyRes = await fetch(target, {
-      method: req.method,
-      headers: req.headers,
-      body: req.body,
-      redirect: "manual"
-    });
-
-    return new Response(proxyRes.body, {
-      status: proxyRes.status,
-      headers: proxyRes.headers,
-    });
-  } catch (e) {
-    return new Response("Proxy error: " + e.message, { status: 502 });
-  }
-});    ].includes(key.toLowerCase())) {
-      result.set(key, value);
-    }
-  }
-  return result;
-}
