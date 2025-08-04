@@ -1,8 +1,8 @@
-// proxy.ts — Deno Deploy Web Stream proxy to Fastly 
+import { serve } from "https://deno.land/std@0.203.0/http/server.ts";
 
-const FASTLY_TARGET = "https://thoroughly-champion-mastiff.edgecompute.app"; // замени на свой
+const FASTLY_TARGET = "https://thoroughly-champion-mastiff.edgecompute.app"; // Заменить на свой Fastly endpoint
 
-export default async function handler(req: Request): Promise<Response> {
+serve(async (req: Request): Promise<Response> => {
   const { method, headers } = req;
 
   const url = new URL(req.url);
@@ -20,12 +20,21 @@ export default async function handler(req: Request): Promise<Response> {
     status: resp.status,
     headers: stripHopByHop(resp.headers),
   });
-}
+});
 
 function stripHopByHop(headers: Headers): Headers {
   const result = new Headers();
   for (const [key, value] of headers.entries()) {
-    if (!["connection", "keep-alive", "transfer-encoding", "upgrade", "proxy-authenticate", "proxy-authorization", "te", "trailers"].includes(key.toLowerCase())) {
+    if (![
+      "connection",
+      "keep-alive",
+      "transfer-encoding",
+      "upgrade",
+      "proxy-authenticate",
+      "proxy-authorization",
+      "te",
+      "trailers"
+    ].includes(key.toLowerCase())) {
       result.set(key, value);
     }
   }
